@@ -1,0 +1,6 @@
+@EndUserText.label: 'Travel service definition'
+define service ZNP_TRAVEL_SD {
+  expose ZNP_TRAVEL_C;
+  expose ZNP_BOOKINGS_C;
+  expose ZNP_SUPPLEMENT_C;
+}

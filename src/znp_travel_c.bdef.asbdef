@@ -1,0 +1,37 @@
+projection;
+strict ( 2 );
+use draft;
+
+define behavior for ZNP_TRAVEL_C alias Travel
+use etag
+{
+  use create;
+  use update;
+  use delete;
+
+  use action Edit;
+  use action Discard;
+  use action Resume;
+  use action Prepare;
+  use action Activate;
+
+  use association _Booking { create; with draft; }
+}
+
+define behavior for ZNP_BOOKINGS_C alias Booking
+{
+  use update;
+  use delete;
+
+  use association _Travel{with draft;}
+  use association _supplement { create; with draft;}
+}
+
+define behavior for ZNP_SUPPLEMENT_C alias Supplement
+{
+  use update;
+  use delete;
+
+  use association _travel{with draft;}
+  use association _booking{with draft;}
+}
