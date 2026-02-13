@@ -157,6 +157,15 @@ CLASS lhc_Travel DEFINITION INHERITING FROM cl_abap_behavior_handler.
       IMPORTING keys FOR Travel~setTravelId.
     METHODS setOverallStatus FOR DETERMINE ON MODIFY
       IMPORTING keys FOR Travel~setOverallStatus.
+    METHODS accepttravel FOR MODIFY
+      IMPORTING keys FOR ACTION Travel~accepttravel RESULT result.
+
+    METHODS rejecttravel FOR MODIFY
+      IMPORTING keys FOR ACTION Travel~rejecttravel RESULT result.
+    METHODS deductdiscount FOR MODIFY
+      IMPORTING keys FOR ACTION Travel~deductdiscount RESULT result.
+    METHODS GetDefaultsFordeductDiscount FOR READ
+      IMPORTING keys FOR FUNCTION Travel~GetDefaultsFordeductDiscount RESULT result.
 
 ENDCLASS.
 
@@ -208,6 +217,72 @@ CLASS lhc_Travel IMPLEMENTATION.
         WITH VALUE #( FOR ls_status IN lt_status
                       ( %tky = ls_status-%tky
                         OverallStatus = 'O'   )  ).
+
+  ENDMETHOD.
+
+  METHOD accepttravel.
+
+    Modify enTITIES OF znp_travel_i in LOCAL MODE
+    enTITY Travel
+    upDATE fields ( overallstatus )
+    with valUE #( for key in keys ( %tky = key-%tky
+                                    overallstatus = 'A' ) ).
+
+
+    ReAD enTITIES OF znp_travel_i in LOCAL MODE
+    enTITY Travel
+    All FIELDS WITH
+    corRESPONDING #( keys )
+    resuLT data(travels).
+
+    result = value #( for travel in travels ( %tky = travel-%tky
+                                               %param = travel ) ).
+
+  ENDMETHOD.
+
+  METHOD rejecttravel.
+
+    Modify enTITIES OF znp_travel_i in LOCAL MODE
+    enTITY Travel
+    upDATE fields ( overallstatus )
+    with valUE #( for key in keys ( %tky = key-%tky
+                                    overallstatus = 'R' ) ).
+
+
+    ReAD enTITIES OF znp_travel_i in LOCAL MODE
+    enTITY Travel
+    All FIELDS WITH
+    corRESPONDING #( keys )
+    resuLT data(travels).
+
+    result = value #( for travel in travels ( %tky = travel-%tky
+                                               %param = travel ) ).
+
+  ENDMETHOD.
+
+  METHOD deductdiscount.
+
+
+
+  ENDMETHOD.
+
+  METHOD GetDefaultsFordeductDiscount.
+
+    ReAD enTITIES OF znp_travel_i in LOCAL MODE
+    enTITY Travel
+    fiELDS ( TotalPrice )
+    with corRESPONDING #( keys )
+    resULT daTA(travels).
+
+    loop AT travels into data(travel).
+     if travel-TotalPrice >= 4000.
+      appEND vaLUE #( %tky = travel-%tky
+                      %param-discount_percent = 30 ) to result.
+     else.
+      appEND vaLUE #( %tky = travel-%tky
+                      %param-discount_percent = 15 ) to result.
+     enDIF.
+    endloop.
 
   ENDMETHOD.
 

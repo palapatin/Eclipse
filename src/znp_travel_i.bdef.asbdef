@@ -29,6 +29,12 @@ etag master LocalLastChangedAt // system detect the latest timestamp and prevent
   determination setTravelId on save { create; update;}
   determination setOverallStatus on modify { create; update;}
 
+ // Actions
+ action accepttravel result[1] $self;
+ action rejecttravel result[1] $self;
+
+ action deductdiscount parameter Znp_A_discount result[1] $self {default function GetDefaultsFordeductDiscount;}
+
   // Do mapping between cds entity alias names and database level fields
   mapping for znp_travel
   {
