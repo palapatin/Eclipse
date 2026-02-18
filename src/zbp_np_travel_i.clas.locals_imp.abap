@@ -166,6 +166,8 @@ CLASS lhc_Travel DEFINITION INHERITING FROM cl_abap_behavior_handler.
       IMPORTING keys FOR ACTION Travel~deductdiscount RESULT result.
     METHODS GetDefaultsFordeductDiscount FOR READ
       IMPORTING keys FOR FUNCTION Travel~GetDefaultsFordeductDiscount RESULT result.
+    METHODS recalctotalprice FOR MODIFY
+      IMPORTING keys FOR ACTION Travel~recalctotalprice.
 
 ENDCLASS.
 
@@ -342,6 +344,31 @@ endLOOP.
                       %param-discount_percent = 15 ) to result.
      enDIF.
     endloop.
+
+
+  ENDMETHOD.
+
+  METHOD recalctotalprice.
+
+  ReaD ENTITIES OF znp_travel_i in loCAL MODE
+  entITY travel
+  fieLDS ( bookingfee currencycode )
+  with correSPONDING #( keys )
+  result data(travels).
+
+  reaD entiTIES OF znp_travel_i in LOCAL MODE
+  enTITY travel by \_booking
+  fieLDS ( flightprice currencycode )
+  with corrESPONDING #( travels )
+  resuLT data(bookings)
+  link data(booking_links).
+
+  reAD entiTIES OF znp_travel_i in LOCAL MODE
+  enTITY booking by \_supplement
+  fiELDS ( price currencycode )
+  with corrESPONDING #( bookings )
+  link data(supplements_links).
+
 
 
   ENDMETHOD.
