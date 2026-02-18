@@ -262,6 +262,65 @@ CLASS lhc_Travel IMPLEMENTATION.
 
   METHOD deductdiscount.
 
+  data: travel_for_update type taBLE FOR upDATE znp_travel_i.
+
+  data(keys_temp) = keys.
+
+
+  loop AT keys_temp assIGNING fielD-SYMBOL(<key_temp>) where %param-discount_percent is inITIAL or
+                                                             %param-discount_percent > 100 or
+                                                             %param-discount_percent < 0.
+
+  AppEND value #(  %tky = <key_temp>-%tky ) to failed-travel.
+  AppEND value #(  %tky = <key_temp>-%tky
+                   %msg = new_message_with_text( text = 'Invalid discount percentage'
+                                                 severity = if_abap_behv_message=>severity-error )
+                   %element-totalprice = if_abap_behv=>mk-on
+                   %action-deductDiscount = if_abap_behv=>mk-on ) to reported-travel.
+
+         Delete keys_temp.
+endLOOP.
+
+  check keys_temp is not iNITIAL.
+
+  read ENTITIES OF znp_travel_i in LOCAL MODE
+  enTITY travel
+  fiELDS ( totalprice )
+  with corrESPONDING #( keys )
+  reSULT data(lt_travels).
+
+  data: lv_percentage type decfloat16.
+
+  loop at lt_travels assIGNING fieLD-SYMBOL(<fs_travel>).
+
+  data(lv_discount_percent) = keys[ key id %tky = <fs_travel>-%tky ]-%param-discount_percent.
+
+  lv_percentage = lv_discount_percent / 100.
+
+  data(reduced_value) = <fs_travel>-totalprice * lv_percentage.
+
+  reduced_value = <fs_travel>-totalprice - reduced_value.
+
+  appEND vaLUE #( %tky = <fs_travel>-%tky
+                  totalprice = reduced_value ) to travel_for_update.
+
+  EnDLOOP.
+
+  ModIFY enTITIES OF znp_travel_i in LOCAL MODE
+  enTITY travel
+  uPDATE fields ( totalprice )
+  wiTH travel_for_update.
+
+
+  reaD ENTIties of znp_travel_i in LOCAL MODE
+  entity travel
+  all fields with
+  corresponding #( keys )
+  result data(lt_travel_updated).
+
+  result = value #( for ls_travel in lt_travel_updated ( %tky = ls_travel-%tky
+                                                         %param = ls_travel ) ).
+
 
 
   ENDMETHOD.
@@ -283,6 +342,7 @@ CLASS lhc_Travel IMPLEMENTATION.
                       %param-discount_percent = 15 ) to result.
      enDIF.
     endloop.
+
 
   ENDMETHOD.
 
