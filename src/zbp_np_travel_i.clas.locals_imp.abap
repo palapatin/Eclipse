@@ -4,6 +4,8 @@ CLASS lhc_supplement DEFINITION INHERITING FROM cl_abap_behavior_handler.
 
     METHODS setBookingSupplId FOR DETERMINE ON SAVE
       IMPORTING keys FOR Supplement~setBookingSupplId.
+    METHODS Calculatetotalprice FOR DETERMINE ON MODIFY
+      IMPORTING keys FOR Supplement~Calculatetotalprice.
 
 ENDCLASS.
 
@@ -64,6 +66,21 @@ CLASS lhc_supplement IMPLEMENTATION.
 
   ENDMETHOD.
 
+  METHOD Calculatetotalprice.
+
+  ReAD eNTITIES OF znp_travel_i in LOCAL MODE
+  enTITY supplement by \_travel
+  fiELDS ( traveluuid )
+  with corrESPONDING #( keys )
+  reSULT data(travels).
+
+  modIFY enTITIES OF znp_travel_i in LOCAL MODE
+  entITY travel
+  exECUTE recalctotalprice
+  from corrESPONDING #( travels ).
+
+  ENDMETHOD.
+
 ENDCLASS.
 
 CLASS lhc_booking DEFINITION INHERITING FROM cl_abap_behavior_handler.
@@ -75,6 +92,8 @@ CLASS lhc_booking DEFINITION INHERITING FROM cl_abap_behavior_handler.
 
     METHODS setBookingid FOR DETERMINE ON SAVE
       IMPORTING keys FOR Booking~setBookingid.
+    METHODS Calculatetotalprice FOR DETERMINE ON MODIFY
+      IMPORTING keys FOR Booking~Calculatetotalprice.
 
 ENDCLASS.
 
@@ -143,6 +162,22 @@ CLASS lhc_booking IMPLEMENTATION.
 
   ENDMETHOD.
 
+  METHOD Calculatetotalprice.
+
+  ReAD eNTITIES OF znp_travel_i in LOCAL MODE
+  enTITY booking by \_travel
+  fiELDS ( traveluuid )
+  with corrESPONDING #( keys )
+  reSULT data(travels).
+
+  modIFY enTITIES OF znp_travel_i in LOCAL MODE
+  entITY travel
+  exECUTE recalctotalprice
+  from corrESPONDING #( travels ).
+
+
+  ENDMETHOD.
+
 ENDCLASS.
 
 CLASS lhc_Travel DEFINITION INHERITING FROM cl_abap_behavior_handler.
@@ -168,6 +203,8 @@ CLASS lhc_Travel DEFINITION INHERITING FROM cl_abap_behavior_handler.
       IMPORTING keys FOR FUNCTION Travel~GetDefaultsFordeductDiscount RESULT result.
     METHODS recalctotalprice FOR MODIFY
       IMPORTING keys FOR ACTION Travel~recalctotalprice.
+    METHODS calculatetotalprice FOR DETERMINE ON MODIFY
+      IMPORTING keys FOR Travel~calculatetotalprice.
 
 ENDCLASS.
 
@@ -224,104 +261,104 @@ CLASS lhc_Travel IMPLEMENTATION.
 
   METHOD accepttravel.
 
-    Modify enTITIES OF znp_travel_i in LOCAL MODE
-    enTITY Travel
-    upDATE fields ( overallstatus )
-    with valUE #( for key in keys ( %tky = key-%tky
+    MODIFY ENTITIES OF znp_travel_i IN LOCAL MODE
+    ENTITY Travel
+    UPDATE FIELDS ( overallstatus )
+    WITH VALUE #( FOR key IN keys ( %tky = key-%tky
                                     overallstatus = 'A' ) ).
 
 
-    ReAD enTITIES OF znp_travel_i in LOCAL MODE
-    enTITY Travel
-    All FIELDS WITH
-    corRESPONDING #( keys )
-    resuLT data(travels).
+    READ ENTITIES OF znp_travel_i IN LOCAL MODE
+    ENTITY Travel
+    ALL FIELDS WITH
+    CORRESPONDING #( keys )
+    RESULT DATA(travels).
 
-    result = value #( for travel in travels ( %tky = travel-%tky
+    result = VALUE #( FOR travel IN travels ( %tky = travel-%tky
                                                %param = travel ) ).
 
   ENDMETHOD.
 
   METHOD rejecttravel.
 
-    Modify enTITIES OF znp_travel_i in LOCAL MODE
-    enTITY Travel
-    upDATE fields ( overallstatus )
-    with valUE #( for key in keys ( %tky = key-%tky
+    MODIFY ENTITIES OF znp_travel_i IN LOCAL MODE
+    ENTITY Travel
+    UPDATE FIELDS ( overallstatus )
+    WITH VALUE #( FOR key IN keys ( %tky = key-%tky
                                     overallstatus = 'R' ) ).
 
 
-    ReAD enTITIES OF znp_travel_i in LOCAL MODE
-    enTITY Travel
-    All FIELDS WITH
-    corRESPONDING #( keys )
-    resuLT data(travels).
+    READ ENTITIES OF znp_travel_i IN LOCAL MODE
+    ENTITY Travel
+    ALL FIELDS WITH
+    CORRESPONDING #( keys )
+    RESULT DATA(travels).
 
-    result = value #( for travel in travels ( %tky = travel-%tky
+    result = VALUE #( FOR travel IN travels ( %tky = travel-%tky
                                                %param = travel ) ).
 
   ENDMETHOD.
 
   METHOD deductdiscount.
 
-  data: travel_for_update type taBLE FOR upDATE znp_travel_i.
+    DATA: travel_for_update TYPE TABLE FOR UPDATE znp_travel_i.
 
-  data(keys_temp) = keys.
-
-
-  loop AT keys_temp assIGNING fielD-SYMBOL(<key_temp>) where %param-discount_percent is inITIAL or
-                                                             %param-discount_percent > 100 or
-                                                             %param-discount_percent < 0.
-
-  AppEND value #(  %tky = <key_temp>-%tky ) to failed-travel.
-  AppEND value #(  %tky = <key_temp>-%tky
-                   %msg = new_message_with_text( text = 'Invalid discount percentage'
-                                                 severity = if_abap_behv_message=>severity-error )
-                   %element-totalprice = if_abap_behv=>mk-on
-                   %action-deductDiscount = if_abap_behv=>mk-on ) to reported-travel.
-
-         Delete keys_temp.
-endLOOP.
-
-  check keys_temp is not iNITIAL.
-
-  read ENTITIES OF znp_travel_i in LOCAL MODE
-  enTITY travel
-  fiELDS ( totalprice )
-  with corrESPONDING #( keys )
-  reSULT data(lt_travels).
-
-  data: lv_percentage type decfloat16.
-
-  loop at lt_travels assIGNING fieLD-SYMBOL(<fs_travel>).
-
-  data(lv_discount_percent) = keys[ key id %tky = <fs_travel>-%tky ]-%param-discount_percent.
-
-  lv_percentage = lv_discount_percent / 100.
-
-  data(reduced_value) = <fs_travel>-totalprice * lv_percentage.
-
-  reduced_value = <fs_travel>-totalprice - reduced_value.
-
-  appEND vaLUE #( %tky = <fs_travel>-%tky
-                  totalprice = reduced_value ) to travel_for_update.
-
-  EnDLOOP.
-
-  ModIFY enTITIES OF znp_travel_i in LOCAL MODE
-  enTITY travel
-  uPDATE fields ( totalprice )
-  wiTH travel_for_update.
+    DATA(keys_temp) = keys.
 
 
-  reaD ENTIties of znp_travel_i in LOCAL MODE
-  entity travel
-  all fields with
-  corresponding #( keys )
-  result data(lt_travel_updated).
+    LOOP AT keys_temp ASSIGNING FIELD-SYMBOL(<key_temp>) WHERE %param-discount_percent IS INITIAL OR
+                                                               %param-discount_percent > 100 OR
+                                                               %param-discount_percent < 0.
 
-  result = value #( for ls_travel in lt_travel_updated ( %tky = ls_travel-%tky
-                                                         %param = ls_travel ) ).
+      APPEND VALUE #(  %tky = <key_temp>-%tky ) TO failed-travel.
+      APPEND VALUE #(  %tky = <key_temp>-%tky
+                       %msg = new_message_with_text( text = 'Invalid discount percentage'
+                                                     severity = if_abap_behv_message=>severity-error )
+                       %element-totalprice = if_abap_behv=>mk-on
+                       %action-deductDiscount = if_abap_behv=>mk-on ) TO reported-travel.
+
+      DELETE keys_temp.
+    ENDLOOP.
+
+    CHECK keys_temp IS NOT INITIAL.
+
+    READ ENTITIES OF znp_travel_i IN LOCAL MODE
+    ENTITY travel
+    FIELDS ( totalprice )
+    WITH CORRESPONDING #( keys )
+    RESULT DATA(lt_travels).
+
+    DATA: lv_percentage TYPE decfloat16.
+
+    LOOP AT lt_travels ASSIGNING FIELD-SYMBOL(<fs_travel>).
+
+      DATA(lv_discount_percent) = keys[ KEY id %tky = <fs_travel>-%tky ]-%param-discount_percent.
+
+      lv_percentage = lv_discount_percent / 100.
+
+      DATA(reduced_value) = <fs_travel>-totalprice * lv_percentage.
+
+      reduced_value = <fs_travel>-totalprice - reduced_value.
+
+      APPEND VALUE #( %tky = <fs_travel>-%tky
+                      totalprice = reduced_value ) TO travel_for_update.
+
+    ENDLOOP.
+
+    MODIFY ENTITIES OF znp_travel_i IN LOCAL MODE
+    ENTITY travel
+    UPDATE FIELDS ( totalprice )
+    WITH travel_for_update.
+
+
+    READ ENTITIES OF znp_travel_i IN LOCAL MODE
+    ENTITY travel
+    ALL FIELDS WITH
+    CORRESPONDING #( keys )
+    RESULT DATA(lt_travel_updated).
+
+    result = VALUE #( FOR ls_travel IN lt_travel_updated ( %tky = ls_travel-%tky
+                                                           %param = ls_travel ) ).
 
 
 
@@ -329,47 +366,114 @@ endLOOP.
 
   METHOD GetDefaultsFordeductDiscount.
 
-    ReAD enTITIES OF znp_travel_i in LOCAL MODE
-    enTITY Travel
-    fiELDS ( TotalPrice )
-    with corRESPONDING #( keys )
-    resULT daTA(travels).
+    READ ENTITIES OF znp_travel_i IN LOCAL MODE
+    ENTITY Travel
+    FIELDS ( TotalPrice )
+    WITH CORRESPONDING #( keys )
+    RESULT DATA(travels).
 
-    loop AT travels into data(travel).
-     if travel-TotalPrice >= 4000.
-      appEND vaLUE #( %tky = travel-%tky
-                      %param-discount_percent = 30 ) to result.
-     else.
-      appEND vaLUE #( %tky = travel-%tky
-                      %param-discount_percent = 15 ) to result.
-     enDIF.
-    endloop.
+    LOOP AT travels INTO DATA(travel).
+      IF travel-TotalPrice >= 4000.
+        APPEND VALUE #( %tky = travel-%tky
+                        %param-discount_percent = 30 ) TO result.
+      ELSE.
+        APPEND VALUE #( %tky = travel-%tky
+                        %param-discount_percent = 15 ) TO result.
+      ENDIF.
+    ENDLOOP.
 
 
   ENDMETHOD.
 
   METHOD recalctotalprice.
 
-  ReaD ENTITIES OF znp_travel_i in loCAL MODE
-  entITY travel
-  fieLDS ( bookingfee currencycode )
-  with correSPONDING #( keys )
-  result data(travels).
+    TYPES: BEGIN OF ty_amount_per_currencycode,
+             amount        TYPE /dmo/total_price,
+             currency_code TYPE /dmo/currency_code,
+           END OF ty_amount_per_currencycode.
 
-  reaD entiTIES OF znp_travel_i in LOCAL MODE
-  enTITY travel by \_booking
-  fieLDS ( flightprice currencycode )
-  with corrESPONDING #( travels )
-  resuLT data(bookings)
-  link data(booking_links).
-
-  reAD entiTIES OF znp_travel_i in LOCAL MODE
-  enTITY booking by \_supplement
-  fiELDS ( price currencycode )
-  with corrESPONDING #( bookings )
-  link data(supplements_links).
+    DATA: amounts_per_currencycode TYPE STANDARD TABLE OF ty_amount_per_currencycode.
 
 
+    READ ENTITIES OF znp_travel_i IN LOCAL MODE
+    ENTITY travel
+    FIELDS ( bookingfee currencycode )
+    WITH CORRESPONDING #( keys )
+    RESULT DATA(travels).
+
+    READ ENTITIES OF znp_travel_i IN LOCAL MODE
+    ENTITY travel BY \_booking
+    FIELDS ( flightprice currencycode )
+    WITH CORRESPONDING #( travels )
+    RESULT DATA(bookings)
+    LINK DATA(booking_links).
+
+    READ ENTITIES OF znp_travel_i IN LOCAL MODE
+    ENTITY booking BY \_supplement
+    FIELDS ( price currencycode )
+    WITH CORRESPONDING #( bookings )
+    RESULT DATA(supplements)
+    LINK DATA(supplements_links).
+
+    LOOP AT travels ASSIGNING FIELD-SYMBOL(<travel>).
+
+      amounts_per_currencycode = VALUE #( ( amount = <travel>-bookingfee
+                                          currency_code =  <travel>-CurrencyCode ) ).
+
+      LOOP AT booking_links INTO DATA(booking_link) USING KEY id WHERE source-%tky = <travel>-%tky.
+
+        DATA(booking) = bookings[ KEY id %tky = booking_link-target-%tky ].
+        COLLECT VALUE ty_amount_per_currencycode( amount = booking-FlightPrice
+                                                  currency_code = booking-CurrencyCode ) INTO amounts_per_currencycode.
+
+        LOOP AT supplements_links INTO DATA(supplement_link) USING KEY id WHERE source-%tky = booking-%tky.
+
+          DATA(supplement) = supplements[ KEY id %tky = supplement_link-target-%tky ].
+          COLLECT VALUE ty_amount_per_currencycode( amount = supplement-Price
+                                                    currency_code = supplement-CurrencyCode ) INTO amounts_per_currencycode.
+
+
+        ENDLOOP.
+      ENDLOOP.
+    ENDLOOP.
+
+   DeLETE amounts_per_currencycode where currency_code is iniTIAL .
+
+   loop at amounts_per_currencycode into data(amount_per_currencycode).
+
+   if  <travel>-CurrencyCode = amount_per_currencycode-currency_code.
+       <travel>-TotalPrice += amount_per_currencycode-amount.
+
+   elSE.
+       /dmo/cl_flight_amdp=>convert_currency(
+              ExpoRTING
+                iv_amount = amount_per_currencycode-amount
+                iv_currency_code_source = amount_per_currencycode-currency_code
+                iv_currency_code_target = <travel>-CurrencyCode
+                iv_exchange_rate_date   = cl_abap_context_info=>get_system_date( )
+             IMPORTING
+                ev_amount              = data(total_booking_price_per_curr)
+        ).
+
+        <travel>-TotalPrice += total_booking_price_per_curr.
+
+   enDIF.
+
+   ModIFY entiTIES OF znp_travel_i in LOCAL MODE
+   enTITY travel
+   upDATE fieLDS ( totalprice )
+   with corrESPONDING #( travels ).
+
+   endloop.
+
+  ENDMETHOD.
+
+  METHOD calculatetotalprice.
+
+   ModiFY entITIES OF znp_travel_i in loCAL MODE
+   enTITY travel
+   exECUTE recalctotalprice
+   from corrESPONDING #( Keys ).
 
   ENDMETHOD.
 

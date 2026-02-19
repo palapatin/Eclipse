@@ -34,6 +34,7 @@ etag master LocalLastChangedAt // system detect the latest timestamp and prevent
  action rejecttravel result[1] $self;
 
  action deductdiscount parameter Znp_A_discount result[1] $self {default function GetDefaultsFordeductDiscount;}
+ determination calculatetotalprice on modify { create; field BookingFee , CurrencyCode; }
  internal action recalctotalprice;
 
 
@@ -77,6 +78,14 @@ etag master LocalLastChangedAt
   determination setBookingid on save { create; }
   determination setBookingdate on save { create;}
 
+  determination Calculatetotalprice on modify {create; field flightprice, currencycode; }
+
+  side effects {
+
+  field flightprice affects field _travel.totalprice;
+
+  }
+
   mapping for znp_bookings
   {
   BookingUuid        = booking_uuid;
@@ -110,6 +119,14 @@ etag master LocalLastChangedAt
   association _booking{ with draft;}
 
   determination setBookingSupplId on save { create; }
+
+  determination Calculatetotalprice on modify {create; field price, currencycode; }
+
+  side effects {
+
+  field price affects field _travel.totalprice;
+
+  }
 
   mapping for znp_supplement
   {
