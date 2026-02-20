@@ -205,6 +205,8 @@ CLASS lhc_Travel DEFINITION INHERITING FROM cl_abap_behavior_handler.
       IMPORTING keys FOR ACTION Travel~recalctotalprice.
     METHODS calculatetotalprice FOR DETERMINE ON MODIFY
       IMPORTING keys FOR Travel~calculatetotalprice.
+    METHODS validatecustomer FOR VALIDATE ON SAVE
+      IMPORTING keys FOR Travel~validatecustomer.
 
 ENDCLASS.
 
@@ -474,6 +476,43 @@ CLASS lhc_Travel IMPLEMENTATION.
    enTITY travel
    exECUTE recalctotalprice
    from corrESPONDING #( Keys ).
+
+  ENDMETHOD.
+
+  METHOD validatecustomer.
+
+  reAD entiTIES OF znp_travel_i in local MODE
+  enTITY travel
+  fiELDS ( customerid  )
+  with corrESPONDING #( keys )
+  resULT data(travels).
+
+  data: customers type sorTED TABLE OF /dmo/customer with unIQUE keY customer_id.
+  customers = correSPONDING #( travels disCARDING DUPLICATES maPPING customer_id = customerid exCEPT * ).
+
+  select from /dmo/customer fielDS customer_id
+  for ALL ENTRIES IN @customers
+  where customer_id = @customers-customer_id
+  into table @data(valid_customers).
+
+  looP AT travels into data(travel).
+
+  if travel-CustomerId is not inITIAL and not line_exists( valid_customers[ customer_id = travel-CustomerId ] ).
+     append value #( %tky = travel-%tky ) to failed-travel.
+
+     append value #( %tky = travel-%tky
+                     %msg = new_message_with_text(
+                            severity = if_abap_behv_message=>severity-error
+                            text = |Not a valid customer { travel-CustomerId }| )
+                     %element-customerid = if_abap_behv=>mk-on  ) to reported-travel.
+  else.
+
+  Endif.
+
+  endlOOP.
+
+
+
 
   ENDMETHOD.
 

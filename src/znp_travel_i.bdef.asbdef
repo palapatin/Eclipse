@@ -29,6 +29,9 @@ etag master LocalLastChangedAt // system detect the latest timestamp and prevent
   determination setTravelId on save { create; update;}
   determination setOverallStatus on modify { create; update;}
 
+  // Validations
+  validation validatecustomer on save { create; field customerid;}
+
  // Actions
  action accepttravel result[1] $self;
  action rejecttravel result[1] $self;
@@ -37,7 +40,11 @@ etag master LocalLastChangedAt // system detect the latest timestamp and prevent
  determination calculatetotalprice on modify { create; field BookingFee , CurrencyCode; }
  internal action recalctotalprice;
 
+  side effects {
 
+  field bookingfee affects field totalprice;
+
+  }
   // Do mapping between cds entity alias names and database level fields
   mapping for znp_travel
   {
