@@ -21,6 +21,10 @@ use etag
   use action deductdiscount;
   use function GetDefaultsFordeductDiscount;
 
+  use action validatecustomerid;
+  use action validateagencyid;
+  use action validatedatesval;
+
   use association _Booking { create; with draft; }
 }
 

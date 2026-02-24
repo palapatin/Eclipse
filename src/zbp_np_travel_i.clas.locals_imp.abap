@@ -501,11 +501,15 @@ CLASS lhc_Travel IMPLEMENTATION.
   into table @data(valid_customers).
 
   looP AT travels into data(travel).
+     appenD value #( %tky = travel-%tky
+                    %state_area = 'VALIDATE_CUSTOMER' ) TO Reported-travel.
+
 
   if travel-CustomerId is not inITIAL and not line_exists( valid_customers[ customer_id = travel-CustomerId ] ).
      append value #( %tky = travel-%tky ) to failed-travel.
 
      append value #( %tky = travel-%tky
+              %state_area = 'VALIDATE_CUSTOMER'
                      %msg = new_message_with_text(
                             severity = if_abap_behv_message=>severity-error
                             text = |Not a valid customer { travel-CustomerId }| )
@@ -538,11 +542,15 @@ CLASS lhc_Travel IMPLEMENTATION.
   into table @data(valid_agencies).
 
   looP AT travels into data(travel).
+     appenD value #( %tky = travel-%tky
+                    %state_area = 'VALIDATE_AGENCY' ) TO Reported-travel.
+
 
   if travel-agencyid is not inITIAL and not line_exists( valid_agencies[ agency_id = travel-agencyid ] ).
      append value #( %tky = travel-%tky ) to failed-travel.
 
      append value #( %tky = travel-%tky
+                     %state_area = 'VALIDATE_AGENCY'
                      %msg = new_message_with_text(
                             severity = if_abap_behv_message=>severity-error
                             text = |Not a valid agency { travel-agencyid }| )
@@ -565,11 +573,15 @@ CLASS lhc_Travel IMPLEMENTATION.
   resULT data(travels).
 
   loop at travels into data(travel).
+     appenD value #( %tky = travel-%tky
+                    %state_area = 'VALIDATE_DATES' ) TO Reported-travel.
+
 
   if travel-BeginDate is inITIAL.
      append value #( %tky = travel-%tky ) to failed-travel.
 
      append value #( %tky = travel-%tky
+                     %state_area = 'VALIDATE_DATES'
                      %msg = new_message_with_text(
                             severity = if_abap_behv_message=>severity-error
                             text = |Begin date shold not be blank| )
@@ -580,6 +592,7 @@ CLASS lhc_Travel IMPLEMENTATION.
      append value #( %tky = travel-%tky ) to failed-travel.
 
      append value #( %tky = travel-%tky
+                      %state_area = 'VALIDATE_DATES'
                      %msg = new_message_with_text(
                             severity = if_abap_behv_message=>severity-error
                             text = |End date shold not be blank| )
@@ -590,9 +603,10 @@ CLASS lhc_Travel IMPLEMENTATION.
      append value #( %tky = travel-%tky ) to failed-travel.
 
      append value #( %tky = travel-%tky
+                   %state_area = 'VALIDATE_DATES'
                      %msg = new_message_with_text(
                             severity = if_abap_behv_message=>severity-error
-                            text = |Begin date shold not be grater thanEenddate| )
+                            text = |Begin date shold not be grater than End date| )
                      %element-begindate = if_abap_behv=>mk-on
                      %element-enddate = if_abap_behv=>mk-on
                      ) to reported-travel.

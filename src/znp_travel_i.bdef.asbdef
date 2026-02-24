@@ -22,7 +22,12 @@ etag master LocalLastChangedAt // system detect the latest timestamp and prevent
   draft action Discard;
   draft action Resume;
   draft action Activate optimized;
-  draft determine action Prepare;
+  draft determine action Prepare
+  {
+  validation validatecustomer;
+  validation validateagency;
+  validation validatedates;
+  }
 
 
   // determination
@@ -43,9 +48,16 @@ etag master LocalLastChangedAt // system detect the latest timestamp and prevent
  determination calculatetotalprice on modify { create; field BookingFee , CurrencyCode; }
  internal action recalctotalprice;
 
+  determine action validatecustomerid { validation validatecustomer; }
+  determine action validateagencyid { validation validateagency; }
+  determine action validatedatesval { validation validatedates; }
+
   side effects {
 
   field bookingfee affects field totalprice;
+  determine action validatecustomerid executed on field customerid affects messages;
+  determine action validateagencyid executed on field agencyid affects messages;
+  determine action validatedatesval executed on field begindate, field enddate affects messages;
 
   }
   // Do mapping between cds entity alias names and database level fields
