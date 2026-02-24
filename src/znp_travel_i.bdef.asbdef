@@ -31,6 +31,9 @@ etag master LocalLastChangedAt // system detect the latest timestamp and prevent
 
   // Validations
   validation validatecustomer on save { create; field customerid;}
+  validation validateagency on save { create; field AgencyId;}
+  validation validatedates on save { create; field BeginDate, EndDate;}
+
 
  // Actions
  action accepttravel result[1] $self;

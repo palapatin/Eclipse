@@ -207,6 +207,11 @@ CLASS lhc_Travel DEFINITION INHERITING FROM cl_abap_behavior_handler.
       IMPORTING keys FOR Travel~calculatetotalprice.
     METHODS validatecustomer FOR VALIDATE ON SAVE
       IMPORTING keys FOR Travel~validatecustomer.
+    METHODS validateagency FOR VALIDATE ON SAVE
+      IMPORTING keys FOR Travel~validateagency.
+
+    METHODS validatedates FOR VALIDATE ON SAVE
+      IMPORTING keys FOR Travel~validatedates.
 
 ENDCLASS.
 
@@ -513,6 +518,87 @@ CLASS lhc_Travel IMPLEMENTATION.
 
 
 
+
+  ENDMETHOD.
+
+  METHOD validateagency.
+
+  reAD entiTIES OF znp_travel_i in local MODE
+  enTITY travel
+  fiELDS ( AgencyId  )
+  with corrESPONDING #( keys )
+  resULT data(travels).
+
+  data: agencies type sorTED TABLE OF /dmo/agency with unIQUE keY agency_id.
+  agencies = correSPONDING #( travels disCARDING DUPLICATES maPPING agency_id = agencyid exCEPT * ).
+
+  select from /dmo/agency fielDS agency_id
+  for ALL ENTRIES IN @agencies
+  where agency_id = @agencies-agency_id
+  into table @data(valid_agencies).
+
+  looP AT travels into data(travel).
+
+  if travel-agencyid is not inITIAL and not line_exists( valid_agencies[ agency_id = travel-agencyid ] ).
+     append value #( %tky = travel-%tky ) to failed-travel.
+
+     append value #( %tky = travel-%tky
+                     %msg = new_message_with_text(
+                            severity = if_abap_behv_message=>severity-error
+                            text = |Not a valid agency { travel-agencyid }| )
+                     %element-agencyid = if_abap_behv=>mk-on  ) to reported-travel.
+  else.
+
+  Endif.
+
+  endlOOP.
+
+
+  ENDMETHOD.
+
+  METHOD validatedates.
+
+  reAD entiTIES OF znp_travel_i in local MODE
+  enTITY travel
+  fiELDS ( BeginDate EndDate  )
+  with corrESPONDING #( keys )
+  resULT data(travels).
+
+  loop at travels into data(travel).
+
+  if travel-BeginDate is inITIAL.
+     append value #( %tky = travel-%tky ) to failed-travel.
+
+     append value #( %tky = travel-%tky
+                     %msg = new_message_with_text(
+                            severity = if_abap_behv_message=>severity-error
+                            text = |Begin date shold not be blank| )
+                     %element-begindate = if_abap_behv=>mk-on  ) to reported-travel.
+  endif.
+
+  if travel-endDate is inITIAL.
+     append value #( %tky = travel-%tky ) to failed-travel.
+
+     append value #( %tky = travel-%tky
+                     %msg = new_message_with_text(
+                            severity = if_abap_behv_message=>severity-error
+                            text = |End date shold not be blank| )
+                     %element-enddate = if_abap_behv=>mk-on  ) to reported-travel.
+  endif.
+
+  if travel-BeginDate is not inITIAL and travel-EndDate is not inITIAL and travel-EndDate < travel-BeginDate.
+     append value #( %tky = travel-%tky ) to failed-travel.
+
+     append value #( %tky = travel-%tky
+                     %msg = new_message_with_text(
+                            severity = if_abap_behv_message=>severity-error
+                            text = |Begin date shold not be grater thanEenddate| )
+                     %element-begindate = if_abap_behv=>mk-on
+                     %element-enddate = if_abap_behv=>mk-on
+                     ) to reported-travel.
+  endif.
+
+  endloop.
 
   ENDMETHOD.
 
