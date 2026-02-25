@@ -15,7 +15,9 @@ etag master LocalLastChangedAt // system detect the latest timestamp and prevent
   update;                            // can change
   delete;                            // can delete/cancel (including it's child 'booking/supplement')
   field(numbering : managed,readonly) TravelUuid; // non editable field in fiori screen
-  field(readonly) travelid, OverallStatus;
+ // field(readonly) travelid, OverallStatus;
+  field(mandatory : create, readonly : update) travelid, OverallStatus;
+  field(features:instance) Bookingfee;
   association _Booking { create; with draft;} // users can do the bookings to the current travel
 
   draft action Edit;
@@ -41,10 +43,10 @@ etag master LocalLastChangedAt // system detect the latest timestamp and prevent
 
 
  // Actions
- action accepttravel result[1] $self;
- action rejecttravel result[1] $self;
+ action ( features:instance ) accepttravel result[1] $self;
+ action ( features:instance ) rejecttravel result[1] $self;
+ action ( features:instance ) deductdiscount parameter Znp_A_discount result[1] $self {default function GetDefaultsFordeductDiscount;}
 
- action deductdiscount parameter Znp_A_discount result[1] $self {default function GetDefaultsFordeductDiscount;}
  determination calculatetotalprice on modify { create; field BookingFee , CurrencyCode; }
  internal action recalctotalprice;
 

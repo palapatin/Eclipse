@@ -212,6 +212,8 @@ CLASS lhc_Travel DEFINITION INHERITING FROM cl_abap_behavior_handler.
 
     METHODS validatedates FOR VALIDATE ON SAVE
       IMPORTING keys FOR Travel~validatedates.
+    METHODS get_instance_features FOR INSTANCE FEATURES
+      IMPORTING keys REQUEST requested_features FOR Travel RESULT result.
 
 ENDCLASS.
 
@@ -613,6 +615,35 @@ CLASS lhc_Travel IMPLEMENTATION.
   endif.
 
   endloop.
+
+  ENDMETHOD.
+
+  METHOD get_instance_features.
+
+  read enTITIES OF znp_travel_i in LOCAL MODE
+  enTITY travel
+  fieLDS ( overallstatus )
+  with corrESPONDING #( keys )
+  result data(travels).
+
+  result = value #( for ls_travel in travels
+                 ( %tky = ls_travel-%tky
+                   %field-BookingFee = cond #( when ls_travel-OverallStatus = 'A'
+                                                then if_abap_behv=>fc-f-read_only
+                                                else if_abap_behv=>fc-f-unrestricted )
+
+                   %action-accepttravel = cond #( when ls_travel-OverallStatus = 'A'
+                                                then if_abap_behv=>fc-o-disabled
+                                                else if_abap_behv=>fc-o-enabled  )
+
+                   %action-rejecttravel = cond #( when ls_travel-OverallStatus = 'R'
+                                                then if_abap_behv=>fc-o-disabled
+                                                else if_abap_behv=>fc-o-enabled  )
+
+                   %action-deductdiscount = cond #( when ls_travel-OverallStatus = 'A'
+                                                then if_abap_behv=>fc-o-disabled
+                                                else if_abap_behv=>fc-o-enabled  )
+                   ) ).
 
   ENDMETHOD.
 
