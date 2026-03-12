@@ -1,3 +1,107 @@
+CLASS lsc_znp_travel_i DEFINITION INHERITING FROM cl_abap_behavior_saver.
+
+  PROTECTED SECTION.
+
+    METHODS save_modified REDEFINITION.
+
+ENDCLASS.
+
+CLASS lsc_znp_travel_i IMPLEMENTATION.
+
+  METHOD save_modified.
+
+  data: travel_log        tYPE staNDARD TABLE OF znp_travel_log,
+        travel_log_create tYPE staNDARD TABLE OF znp_travel_log,
+        travel_log_update tYPE staNDARD TABLE OF znp_travel_log.
+
+  if create-travel is nOT inITIAL.
+      travel_log = corrESPONDING #( create-travel ).
+
+  loop AT travel_log aSSIGNING fiELD-SYMBOL(<lfs_travel_log>).
+  <lfs_travel_log>-changing_operation = 'CREATE'.
+
+  get tiME STAMP FIELD <lfs_travel_log>-created_at.
+
+  try.
+
+  <lfs_travel_log>-change_id = cl_system_uuid=>create_uuid_x16_static(  ).
+
+  CatCH cx_uuid_error.
+
+
+  endtry.
+
+
+  if create-travel[ 1 ]-%control-BookingFee = cl_abap_behv=>flag_changed.
+
+  <lfs_travel_log>-changed_field_name = 'Booking fee'.
+  <lfs_travel_log>-changed_value = create-travel[ 1 ]-BookingFee.
+  <lfs_travel_log>-travelid = create-travel[ 1 ]-TravelId.
+
+  ENdif.
+
+  if create-travel[ 1 ]-%control-AgencyId = cl_abap_behv=>flag_changed.
+
+  <lfs_travel_log>-changed_field_name = 'Agency Id'.
+  <lfs_travel_log>-changed_value = create-travel[ 1 ]-AgencyId.
+
+  ENdif.
+
+  append <lfs_travel_log> to travel_log_create.
+  endloop.
+
+  modify znp_travel_log from table @travel_log_create.
+
+  endif.
+
+  if update-travel is not inITIAL.
+      travel_log = corrESPONDING #( update-travel ).
+
+  loop AT travel_log aSSIGNING fiELD-SYMBOL(<lfs_travel_update>).
+  <lfs_travel_update>-changing_operation = 'UPDATE'.
+
+  get tiME STAMP FIELD <lfs_travel_update>-created_at.
+
+  try.
+
+  <lfs_travel_update>-change_id = cl_system_uuid=>create_uuid_x16_static(  ).
+
+  CatCH cx_uuid_error.
+
+
+  endtry.
+
+
+  if update-travel[ 1 ]-%control-BookingFee = cl_abap_behv=>flag_changed.
+
+  <lfs_travel_update>-changed_field_name = 'Booking fee'.
+  <lfs_travel_update>-changed_value = update-travel[ 1 ]-BookingFee.
+  <lfs_travel_update>-travelid = update-travel[ 1 ]-TravelId.
+
+  ENdif.
+
+  if update-travel[ 1 ]-%control-AgencyId = cl_abap_behv=>flag_changed.
+
+  <lfs_travel_update>-changed_field_name = 'Agency Id'.
+  <lfs_travel_update>-changed_value = update-travel[ 1 ]-AgencyId.
+  <lfs_travel_update>-travelid = update-travel[ 1 ]-TravelId.
+
+  ENdif.
+
+  append <lfs_travel_update> to travel_log_update.
+  endloop.
+
+  modify znp_travel_log from table @travel_log_update.
+  endiF.
+
+  if delete-travel is not inITIAL.
+
+  endif.
+
+  ENDMETHOD.
+
+ENDCLASS.
+
 CLASS lhc_supplement DEFINITION INHERITING FROM cl_abap_behavior_handler.
 
   PRIVATE SECTION.

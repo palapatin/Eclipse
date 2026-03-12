@@ -5,6 +5,7 @@ with draft;
 
 define behavior for ZNP_TRAVEL_I alias Travel
 persistent table znp_travel
+with additional save
 draft table znp_d_travel
 lock master
 total etag LastChangedAt
